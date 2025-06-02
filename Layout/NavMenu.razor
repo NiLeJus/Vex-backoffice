@@ -1,0 +1,43 @@
+﻿@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<nav class="nav flex-column mt-4">
+    <NavLink class="nav-link" href="dashboard" Match="NavLinkMatch.All">
+        <span class="bi bi-house-door-fill"></span> Dashboard
+    </NavLink>
+    <NavLink class="nav-link" href="statistics">
+        <span class="bi bi-bar-chart"></span> Statistics
+    </NavLink>
+    <NavLink class="nav-link" href="weather">
+        <span class="bi bi-cloud"></span> Weather
+    </NavLink>
+
+    @if (isSuper)
+    {
+        <NavLink class="nav-link text-danger" href="adminmanagement">
+            <span class="bi bi-shield-lock"></span> Admin Management
+        </NavLink>
+    }
+
+    <button class="btn btn-outline-secondary mt-3" @onclick="Logout">Déconnexion</button>
+</nav>
+
+@code {
+    private bool isSuper = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Récupère "isSuper" du localStorage (stocké comme string "true"/"false")
+        var isSuperStr = await JS.InvokeAsync<string>("localStorage.getItem", "isSuper");
+        isSuper = isSuperStr == "true";
+        await JS.InvokeVoidAsync("logToConsole", $"isSuperStr: {isSuperStr}");
+
+    }
+
+    private async Task Logout()
+    {
+        // Appelle la fonction JS pour déconnecter Firebase et nettoyer le localStorage
+        await JS.InvokeVoidAsync("firebaseLogout");
+        Navigation.NavigateTo("/", forceLoad: true); // Redirige vers la page de connexion
+    }
+}

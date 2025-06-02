@@ -1,0 +1,84 @@
+﻿
+@page "/adminManagement"
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<PageTitle>Admin Management</PageTitle>
+
+<h1>Admin Management</h1>
+
+<div class="accordion" id="accordionExample">
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+               Create Admin
+            </button>
+        </h2>
+        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+            <div class="accordion-body  d-flex">
+                <EditForm Model="newAdminModel" OnValidSubmit="HandleNewAdmin">
+                    <InputText @bind-Value="newAdminModel.Email" type="email" class="form-control w-auto" placeholder="Email" />
+                    <button type="submit" class="btn btn-success mt-2">Create</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                Manage Created Admin
+            </button>
+        </h2>
+        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+            <div class="accordion-body d-flex flex-row">
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private NewAdminModel newAdminModel = new();
+    private string errorMessage;
+    private string adminData;
+    
+    private async Task HandleNewAdmin()
+    {
+        errorMessage = null;
+        adminData = null;
+
+        var result = await JS.InvokeAsync<object>("firebaseLogin", newAdminModel.Email);
+        Navigation.NavigateTo("/dashboard");
+
+        var dict = result as IDictionary<string, object>;
+        if (dict != null && dict.ContainsKey("success") && (bool)dict["success"])
+        {
+            Console.WriteLine("Succeedd");
+            adminData = System.Text.Json.JsonSerializer.Serialize(dict["data"]);
+            StateHasChanged();
+            // Redirection vers la page d'accueil
+        }
+        else
+        {
+            errorMessage = dict != null && dict.ContainsKey("error") ? dict["error"].ToString() : "Erreur inconnue";
+        }
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        // Check user auth
+        var isAuth = await JS.InvokeAsync<string>("localStorage.getItem", "isAuthenticated");
+        if (isAuth != "true")
+        {
+            Navigation.NavigateTo("/", true);
+        }
+    }
+
+    public class NewAdminModel
+    {
+        public string Email { get; set; }
+    }
+
+  
+
+}

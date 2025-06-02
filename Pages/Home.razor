@@ -1,0 +1,70 @@
+﻿@page "/"
+@layout NoSidebarLayout
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+@* @layout MainLayout *@
+
+<PageTitle>Connexion</PageTitle>
+
+    <div class="flex-column display-flex justify-content-center ">
+        <h2 class="text-dark">Connexion</h2>
+        <div>
+
+            <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+                <InputText @bind-Value="loginModel.Email" type="email" class="form-control w-auto" placeholder="Email" />
+                <InputText @bind-Value="loginModel.Password" type="password" class="form-control mt-3 w-auto" placeholder="Mot de passe" />
+                <button type="submit" class="btn btn-primary mt-2">Connexion</button>
+            </EditForm>
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger mt-2">@errorMessage</div>
+            }
+            @if (userData != null)
+            {
+                <div class="alert alert-success mt-2">
+                    Connecté ! Données utilisateur : @userData
+                </div>
+            }
+        </div>
+    </div>
+    
+@code {
+    private LoginModel loginModel = new();
+    private string errorMessage;
+    private string userData;
+
+    private async Task HandleLogin()
+    {
+        errorMessage = null;
+        userData = null;
+
+        var result = await JS.InvokeAsync<object>("firebaseLogin", loginModel.Email, loginModel.Password);
+        Navigation.NavigateTo("/dashboard");
+        
+        var dict = result as IDictionary<string, object>;
+        if (dict != null && dict.ContainsKey("success") && (bool)dict["success"])
+        {
+            Console.WriteLine("Succès");
+            userData = System.Text.Json.JsonSerializer.Serialize(dict["data"]);
+            StateHasChanged();
+            // Redirection vers la page d'accueil
+        }
+        else
+        {
+            errorMessage = dict != null && dict.ContainsKey("error") ? dict["error"].ToString() : "Erreur inconnue";
+        }
+    }
+
+
+
+
+    public class LoginModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+}
+
+
+
