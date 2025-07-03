@@ -1,19 +1,20 @@
 ﻿@page "/signup"
+@using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JS
 
-<EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+<EditForm Model="@registerModel" OnValidSubmit="OnValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
     <div class="mb-3">
         <label for="email">Adresse e-mail</label>
-        <InputText @bind-Value="model.Email" id="email" class="form-control" />
-        <ValidationMessage For="@(() => model.Email)" />
+        <InputText @bind-Value="registerModel.Email" id="email" class="form-control" />
+        <ValidationMessage For="@(() => registerModel.Email)" />
     </div>
     <div class="mb-3">
         <label for="password">Mot de passe</label>
-        <InputText @bind-Value="model.Password" id="password" type="password" class="form-control" />
-        <ValidationMessage For="@(() => model.Password)" />
+        <InputText @bind-Value="registerModel.Password" id="password" type="password" class="form-control" />
+        <ValidationMessage For="@(() => registerModel.Password)" />
     </div>
     <button type="submit" class="btn btn-primary">S’inscrire</button>
 </EditForm>
@@ -24,7 +25,7 @@
 }
 
 @code {
-    private RegisterModel model = new();
+    private RegisterModel registerModel = new();
     private string message;
 
     private async Task OnValidSubmit()
@@ -32,7 +33,7 @@
         message = null;
         try
         {
-            var result = await JS.InvokeAsync<string>("firebaseSignUp", model.Email, model.Password);
+            var result = await JS.InvokeAsync<string>("firebaseSignUp", registerModel.Email, registerModel.Password);
             message = result;
         }
         catch (JSException ex)

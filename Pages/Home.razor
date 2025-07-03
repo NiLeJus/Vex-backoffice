@@ -6,7 +6,7 @@
 @* @layout MainLayout *@
 
 <PageTitle>Connexion</PageTitle>
-
+    
     <div class="flex-column display-flex justify-content-center ">
         <h2 class="text-dark">Connexion</h2>
         <div>
@@ -39,31 +39,42 @@
         errorMessage = null;
         userData = null;
 
-        var result = await JS.InvokeAsync<object>("firebaseLogin", loginModel.Email, loginModel.Password);
-        Navigation.NavigateTo("/dashboard");
-        
-        var dict = result as IDictionary<string, object>;
-        if (dict != null && dict.ContainsKey("success") && (bool)dict["success"])
+        var result = await JS.InvokeAsync<LoginResult>("firebaseLogin", loginModel.Email, loginModel.Password);
+        Console.WriteLine(result);
+
+        if (result != null && result.success)
         {
-            Console.WriteLine("Succès");
-            userData = System.Text.Json.JsonSerializer.Serialize(dict["data"]);
+            Console.WriteLine("Success");
+            userData = System.Text.Json.JsonSerializer.Serialize(result.data);
             StateHasChanged();
-            // Redirection vers la page d'accueil
+            Navigation.NavigateTo("/dashboard");
         }
         else
         {
-            errorMessage = dict != null && dict.ContainsKey("error") ? dict["error"].ToString() : "Erreur inconnue";
+            errorMessage = result?.error ?? "Erreur inconnue";
         }
     }
-
-
-
-
+    
     public class LoginModel
     {
         public string Email { get; set; }
         public string Password { get; set; }
     }
+
+    public class LoginResult
+    {
+        public bool success { get; set; }
+        public AdminData data { get; set; }
+        public string error { get; set; }
+    }
+
+    public class AdminData
+    {
+        public string email { get; set; }
+        public bool isSuper { get; set; }
+        public bool isCreated { get; set; }
+    }
+
 }
 
 

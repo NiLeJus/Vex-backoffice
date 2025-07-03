@@ -13,4 +13,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.RazorPages" Version="2.3.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Vex.Shared\Vex.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

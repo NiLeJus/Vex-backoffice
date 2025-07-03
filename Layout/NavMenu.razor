@@ -5,16 +5,16 @@
     <NavLink class="nav-link" href="dashboard" Match="NavLinkMatch.All">
         <span class="bi bi-house-door-fill"></span> Dashboard
     </NavLink>
-    <NavLink class="nav-link" href="statistics">
+    @* <NavLink class="nav-link" href="statistics">
         <span class="bi bi-bar-chart"></span> Statistics
-    </NavLink>
-    <NavLink class="nav-link" href="weather">
-        <span class="bi bi-cloud"></span> Weather
+    </NavLink> *@
+    <NavLink class="nav-link" href="posts">
+        <span class="bi bi-cloud"></span> Posts
     </NavLink>
 
     @if (isSuper)
     {
-        <NavLink class="nav-link text-danger" href="adminmanagement">
+        <NavLink class="nav-link text-danger" href="admin-management">
             <span class="bi bi-shield-lock"></span> Admin Management
         </NavLink>
     }
@@ -31,7 +31,6 @@
         var isSuperStr = await JS.InvokeAsync<string>("localStorage.getItem", "isSuper");
         isSuper = isSuperStr == "true";
         await JS.InvokeVoidAsync("logToConsole", $"isSuperStr: {isSuperStr}");
-
     }
 
     private async Task Logout()

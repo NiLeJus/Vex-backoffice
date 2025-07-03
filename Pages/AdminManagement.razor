@@ -1,5 +1,5 @@
 ﻿
-@page "/adminManagement"
+@page "/admin-management"
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
@@ -11,17 +11,22 @@
     <div class="accordion-item">
         <h2 class="accordion-header">
             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-               Create Admin
+                Create Admin
             </button>
         </h2>
         <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
-            <div class="accordion-body  d-flex">
-                <EditForm Model="newAdminModel" OnValidSubmit="HandleNewAdmin">
-                    <InputText @bind-Value="newAdminModel.Email" type="email" class="form-control w-auto" placeholder="Email" />
-                    <button type="submit" class="btn btn-success mt-2">Create</button>
-                </EditForm>
-            </div>
+            <EditForm Model="newAdminModel" OnValidSubmit="HandleNewAdmin">
+                <div class="row align-items-end p-2 ">
+                    <div class="col-auto">
+                        <InputText @bind-Value="newAdminModel.Email" type="email" class="form-control" placeholder="Email" />
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-success" >Create</button>
+                    </div>
+                </div>
+            </EditForm>
         </div>
+
     </div>
     <div class="accordion-item">
         <h2 class="accordion-header">
@@ -29,10 +34,32 @@
                 Manage Created Admin
             </button>
         </h2>
-        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
-            <div class="accordion-body d-flex flex-row">
-                
-            </div>
+        <div id="collapseTwo" class="accordion-collapse collapse w-100" data-bs-parent="#accordionExample">
+            <ul class="list-group w-100 ">
+                @if (admins is null)
+                {
+                    <li>Chargement...</li>
+                }
+                else
+                {
+                    @foreach (var admin in admins)
+                    {
+                        <li class="justify-content-between list-group-item d-flex flex-row  @(!admin.IsCreated ? "list-group-item-warning " : "ma-classe-inactive")">@admin.Email (@admin.id)
+
+                            @if (!admin.IsCreated)
+                            {
+                                <p>
+                                Needs to register
+                                </p>
+                            }
+
+                            <div class="btn-group" role="group" aria-label="Admin actions">
+                                <button class="btn btn-danger btn-sm ms-2" @onclick="() => DeleteAdmin(admin.id)">Supprimer</button>
+                            </div>
+                        </li>
+                        }
+                    }
+                </ul>
         </div>
     </div>
 </div>
@@ -41,29 +68,8 @@
     private NewAdminModel newAdminModel = new();
     private string errorMessage;
     private string adminData;
-    
-    private async Task HandleNewAdmin()
-    {
-        errorMessage = null;
-        adminData = null;
+    private List<AdminModel> admins;
 
-        var result = await JS.InvokeAsync<object>("firebaseLogin", newAdminModel.Email);
-        Navigation.NavigateTo("/dashboard");
-
-        var dict = result as IDictionary<string, object>;
-        if (dict != null && dict.ContainsKey("success") && (bool)dict["success"])
-        {
-            Console.WriteLine("Succeedd");
-            adminData = System.Text.Json.JsonSerializer.Serialize(dict["data"]);
-            StateHasChanged();
-            // Redirection vers la page d'accueil
-        }
-        else
-        {
-            errorMessage = dict != null && dict.ContainsKey("error") ? dict["error"].ToString() : "Erreur inconnue";
-        }
-    }
-    
     protected override async Task OnInitializedAsync()
     {
         // Check user auth
@@ -72,6 +78,8 @@
         {
             Navigation.NavigateTo("/", true);
         }
+        admins = await JS.InvokeAsync<List<AdminModel>>("getAdmins");
+        
     }
 
     public class NewAdminModel
@@ -79,6 +87,65 @@
         public string Email { get; set; }
     }
 
-  
+
+    public class AdminModel
+    {
+        public string id { get; set; }
+        public string Email { get; set; }
+        public bool IsCreated { get; set; }
+    }
+
+    private async Task HandleNewAdmin()
+    {
+        errorMessage = null;
+        adminData = null;
+
+        var result = await JS.InvokeAsync<AdminOperationResult>("registerNewAdmin", newAdminModel.Email);
+
+        if (result != null && result.success)
+        {
+            // Recharge la liste
+            admins = await JS.InvokeAsync<List<AdminModel>>("getAdmins");
+            newAdminModel = new NewAdminModel(); 
+            StateHasChanged();
+        }
+        else
+        {
+            errorMessage = result?.error ?? "Erreur inconnue";
+        }
+    }
+
+
+
+    public class AdminOperationResult
+    {
+        public bool success { get; set; }
+        public string error { get; set; }
+    }
+
+    private async Task DeleteAdmin(string adminId)
+    {
+        Console.WriteLine($"Suppression admin {adminId}");
+        var result = await JS.InvokeAsync<DeleteResult>("deleteAdminById", adminId);
+
+        Console.WriteLine($"Résultat suppression: {result?.success} {result?.error}");
+
+        if (result != null && result.success)
+        {
+            admins = await JS.InvokeAsync<List<AdminModel>>("getAdmins");
+            StateHasChanged();
+        }
+        else
+        {
+            errorMessage = result?.error ?? "Erreur inconnue lors de la suppression.";
+        }
+    }
+
+
+    public class DeleteResult
+    {
+        public bool success { get; set; }
+        public string error { get; set; }
+    }
 
 }

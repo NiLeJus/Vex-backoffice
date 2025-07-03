@@ -1,0 +1,134 @@
+﻿@page "/create-post"
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+
+<div class="d-flex flex-row align-items-center justify-content-between">
+    <h2 class="text-dark mb-0 me-3">  New post</h2>
+    <NavLink class="btn btn-warning" href="posts">
+      Retour
+    </NavLink>
+</div>
+
+
+
+
+<EditForm Model="post" OnValidSubmit="HandleSubmit">
+    <div class="mb-3">
+        <label class="form-label">Titre du post</label>
+        <InputText class="form-control" @bind-Value="post.Title" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Date de création</label>
+        <InputDate class="form-control" @bind-Value="post.CreatedAt" />
+    </div>
+
+    <h4>Contenu du post</h4>
+    <div>
+        @foreach (var item in post.Content)
+        {
+            <div class="card mb-2 p-2">
+                <div class="d-flex align-items-center mb-2">
+                    <select class="form-select w-auto me-2" @onchange="e => ChangeType(item, e.Value?.ToString())">
+                        @foreach (var type in Enum.GetValues<ContentType>())
+                        {
+                            <option value="@type" selected="@(item.Type == type)">@type</option>
+                        }
+                    </select>
+                    <button class="btn btn-danger btn-sm" @onclick="() => RemoveItem(item)">Supprimer</button>
+                </div>
+                @switch (item.Type)
+                {
+                    case ContentType.Title:
+                        <InputText class="form-control" placeholder="Titre" @bind-Value="item.Value" />
+                        break;
+                    case ContentType.Text:
+                        <InputTextArea class="form-control" placeholder="Texte" @bind-Value="item.Value" />
+                        break;
+                    case ContentType.Image:
+                        <InputText class="form-control" placeholder="URL de l'image" @bind-Value="item.Value" />
+                        break;
+                }
+            </div>
+        }
+    </div>
+
+    <button type="button" class="btn btn-secondary mt-2" @onclick="AddItem">Ajouter un item</button>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">Enregistrer le post</button>
+    </div>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-success mt-3">@message</div>
+}
+
+@code {
+    private Post post = new()
+        {
+            Title = "",
+            CreatedAt = DateTime.Now,
+            Content = new List<PostContentItem>()
+        };
+
+    private string message;
+
+    private void AddItem()
+    {
+        post.Content.Add(new PostContentItem { Type = ContentType.Text, Value = "" });
+    }
+
+    private void RemoveItem(PostContentItem item)
+    {
+        post.Content.Remove(item);
+    }
+
+    private void ChangeType(PostContentItem item, string? type)
+    {
+        if (Enum.TryParse<ContentType>(type, out var parsedType))
+        {
+            item.Type = parsedType;
+            item.Value = ""; // Réinitialise la valeur si le type change
+        }
+    }
+
+    private async void HandleSubmit()
+    {
+        Console.WriteLine(post);
+        var result = await JS.InvokeAsync<AddPostResult>("addPost", post);
+        post = new Post { CreatedAt = DateTime.Now, Content = new List<PostContentItem>() }; // Reset pour un nouveau post
+        if (result.success)
+        {
+            Navigation.NavigateTo("/posts", true);
+        }
+    }
+
+    public class Post
+    {
+        public string Title { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public List<PostContentItem> Content { get; set; } = new();
+    }
+
+    public class PostContentItem
+    {
+        public ContentType Type { get; set; }
+        public string Value { get; set; }
+    }
+
+    public enum ContentType
+    {
+        Title,
+        Text,
+        Image
+    }
+
+    public class AddPostResult
+    {
+        public bool success { get; set; }
+        public string error { get; set; }
+    }
+
+}

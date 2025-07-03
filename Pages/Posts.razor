@@ -1,0 +1,89 @@
+﻿@page "/posts"
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<PageTitle>Post</PageTitle>
+
+<div class="d-flex flex-row align-items-center justify-content-between">
+    <h2 class="text-dark mb-0 me-3">Post</h2>
+    <NavLink class="btn btn-success" href="create-post">
+        Create new post
+    </NavLink>
+</div>
+
+
+
+
+<div class="flex-column display-flex justify-content-center mt-3">
+
+    <div class="list-group">
+        @if (posts is null)
+        {
+            <li>Chargement...</li>
+        }
+        else
+        {
+            @foreach (Post post in posts)
+            {
+                <div class="list-group-item list-group-item-action mb-2">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1 text-dark">@post.Title</h5>
+                        <small>3 days ago</small>
+                    </div>
+                    <p class="mb-1 text-truncate">@ReturnFirstText(post)</p>
+                </div>
+            }
+        }
+
+
+    </div>
+</div>
+
+@code {
+    private List<Post> posts;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check user auth
+        var isAuth = await JS.InvokeAsync<string>("localStorage.getItem", "isAuthenticated");
+        if (isAuth != "true")
+        {
+            Navigation.NavigateTo("/", true);
+        }
+        posts = await JS.InvokeAsync<List<Post>>("getPosts");
+
+    }
+
+    public class Post
+    {
+        public string Title { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public List<PostContentItem> Content { get; set; } = new();
+    }
+
+    public class PostContentItem
+    {
+        public ContentType Type { get; set; }
+        public string Value { get; set; }
+    }
+
+    public enum ContentType
+    {
+        Title,
+        Text,
+        Image
+    }
+
+    public string ReturnFirstText(Post post)
+    {
+        var firstText = post.Content.FirstOrDefault(c => c.Type == ContentType.Text);
+
+        Console.WriteLine("first text", firstText?.Value ?? "");
+
+        return firstText?.Value ?? "";
+    }
+}
+
+
+
